@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Web.Models;
 using Web.ViewModels;
 using Web.ViewModels.RoutineViewModels;
+using Web.ViewModels.ExerciseViewModels;
 
 namespace Web.Data
 {
@@ -53,5 +54,6 @@ namespace Web.Data
         public DbSet<Workout> Workouts { get; set; }
         public DbSet<Web.ViewModels.RoutineViewModels.RoutineIndexViewModel> RoutineIndexViewModel { get; set; }
         public DbSet<Web.ViewModels.RoutineViewModels.RoutineViewModel> RoutineViewModel { get; set; }
+        public DbSet<Web.ViewModels.ExerciseViewModels.ExerciseIndexViewModel> ExerciseIndexViewModel { get; set; }
     }
 }
