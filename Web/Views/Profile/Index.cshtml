@@ -1,0 +1,51 @@
+﻿@model IEnumerable<Web.ViewModels.ProfileViewModel>
+
+@{
+    ViewData["Title"] = "Profiles";
+}
+
+<h1>Profiles</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.UserName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.HeightDisplay)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Weight)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.InstagramUrl)
+            </th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.UserName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.HeightDisplay)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Weight)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.InstagramUrl)
+            </td>
+            <td>
+                @if (ViewBag.CurrentUserId == item.Id) { 
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> <span>|</span>
+                }
+                <a asp-action="Details" asp-route-id="@item.Id">Details</a> 
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
