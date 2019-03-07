@@ -1,17 +1,21 @@
-﻿@model Web.ViewModels.RoutineViewModels.RoutineViewModel
+﻿@using Web.Types
+@model Web.ViewModels.ExerciseViewModels.ExerciseViewModel
 
 @{
     ViewData["Title"] = "Edit";
 }
 
 <h1>Edit</h1>
-
 <hr />
-
 <div class="row">
     <div class="col-md-4">
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="ExerciseType" class="control-label"></label>
+                <select class="form-control" asp-for="ExerciseType" asp-items="Html.GetEnumSelectList<ExerciseType>()"></select>
+                <span asp-validation-for="ExerciseType" class="text-danger"></span>
+            </div>
             <div class="form-group">
                 <label asp-for="VideoUrl" class="control-label"></label>
                 <input asp-for="VideoUrl" class="form-control" />
@@ -24,7 +28,7 @@
             </div>
             <div class="form-group">
                 <label asp-for="Description" class="control-label"></label>
-                <textarea rows=5 asp-for="Description" class="form-control" ></textarea>
+                <textarea rows=5 asp-for="Description" class="form-control"></textarea>
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
             <input type="hidden" asp-for="Id" />
@@ -36,19 +40,19 @@
     <div class="col-md-8">
         <div class="row">
             <div class="form-group col-lg-4">
-                <a type="button" class="btn btn-block" asp-controller="Exercise" asp-action="Create" asp-route-id="@Model.Id">Add New Exercise</a>
+                <a type="button" class="btn btn-block" asp-controller="MuscleGroup" asp-action="Create" asp-route-id="@Model.Id">Add New Muscle Group</a>
             </div>
         </div>
         <div class="row">
             <div class="form-group col-lg-4">
-                <a type="button" id="AddExerciseFromList" class="btn btn-block">Add From List</a>
+                <a type="button" id="AddMuscleGroupFromList" class="btn btn-block">Add From List</a>   
             </div>
             <div class="form-group col-lg-8">
-                <select name="ExerciseId" asp-items="@ViewBag.ExerciseListItems" class="form-control"></select>
+                <select name="MuscleGroupId" asp-items="@ViewBag.MuscleGroupListItems" class="form-control"></select>
             </div>
         </div>
         <div class="row">
-            @await Html.PartialAsync("_index", Model.Exercises)
+            @await Html.PartialAsync("_index", Model.MuscleGroups)
         </div>
     </div>
 </div>
@@ -60,8 +64,10 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
+
 <script>
-    $("#AddExerciseFromList").click(function () {
-        AddManyToManyRelationShip("@ViewContext.RouteData.Values["controller"]", "AddExerciseToRoutine", "?exerciseId=" + $("[name=ExerciseId]").val() + "&routineId=@Model.Id");
+    $("#AddMuscleGroupFromList").click(function () {
+        AddManyToManyRelationShip("@ViewContext.RouteData.Values["controller"]", "AddMuscleGroupToExercise", "?muscleGroupId=" + $("[name=MuscleGroupId]").val() + "&exerciseId=@Model.Id");
+        $("[name = MuscleGroupId] option[value='" + $("[name=MuscleGroupId]").val() + "']").remove();
     });
 </script>

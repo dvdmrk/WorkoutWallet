@@ -39,11 +39,14 @@
             <td>
                 @Html.DisplayFor(modelItem => item.InstagramUrl)
             </td>
-            <td>
-                @if (ViewBag.CurrentUserId == item.Id) { 
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> <span>|</span>
-                }
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> 
+            <td class="index-actions">
+                <span>
+                    @if (ViewBag.CurrentUserId == item.Id)
+                    {
+                        <a asp-action="Edit" title="Edit" asp-route-id="@item.Id"><i class="fas fa-edit"></i></a>
+                    }
+                    <a asp-action="Details" title="Details" asp-route-id="@item.Id"><i class="fas fa-info-circle"></i></a>
+                </span>
             </td>
         </tr>
 }

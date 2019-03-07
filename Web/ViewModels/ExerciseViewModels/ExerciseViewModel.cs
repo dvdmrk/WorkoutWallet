@@ -10,6 +10,7 @@ namespace Web.ViewModels.ExerciseViewModels
 {
     public class ExerciseViewModel : BaseNamedEntity
     {
+        public Guid RoutineId { get; set; }
         public Guid CreatedById { get; set; }
         [Display(Name = "Created By")]
         public string CreatedByName { get; set; }
@@ -17,8 +18,6 @@ namespace Web.ViewModels.ExerciseViewModels
         public DateTime CreatedDate { get; set; }
         public ExerciseType ExerciseType { get; set; }
         public string VideoUrl { get; set; }
-        public List<DropdownViewModel> Routines { get; set; }
-        public List<DropdownViewModel> MuscleGroups { get; set; }
-        public List<DropdownViewModel> ExerciseSets { get; set; }
+        public List<BaseNamedEntity> MuscleGroups { get; set; }
     }
 }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Web.Common;
 using Web.Data;
 using Web.Models;
 using Web.ViewModels.RoutineViewModels;
@@ -18,7 +19,7 @@ namespace Web.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        public RoutineController(ApplicationDbContext context)
+        public RoutineController(ApplicationDbContext context) : base(context)
         {
             _context = context;
         }
@@ -80,16 +81,17 @@ namespace Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(new Routine
+                var routine = new Routine
                 {
                     VideoUrl = vm.VideoUrl,
                     Name = vm.Name,
                     Description = vm.Description,
                     CreateBy = _context.Set<User>().Find(GetUserId()),
                     CreateDate = DateTime.Now
-                });
+                };
+                _context.Add(routine);
                 _context.SaveChanges();
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Edit", new { id = routine.Id });
             }
             return View(vm);
         }
@@ -101,11 +103,19 @@ namespace Web.Controllers
                 return NotFound();
             }
 
+            ViewBag.ExerciseListItems = GetDropdownViewModels<Exercise>();
+
             var routine = _context.Set<Routine>().Where(e => e.Id == id).Select(e => new RoutineViewModel
             {
+                Id = e.Id,
                 Name = e.Name,
                 Description = e.Description,
-                VideoUrl = e.VideoUrl
+                VideoUrl = e.VideoUrl,
+                Exercises = e.ExerciseRoutines.Select(c => new BaseNamedEntity {
+                    Id = c.ExerciseId,
+                    Name = c.Exercise.Name,
+                    Description = c.Exercise.Description
+                }).ToList()
             }).FirstOrDefault();
             if (routine == null)
             {
@@ -168,6 +178,17 @@ namespace Web.Controllers
             _context.Routines.Remove(routine);
             _context.SaveChanges();
             return RedirectToAction(nameof(Index));
+        }
+
+        public JsonResult AddExerciseToRoutine(Guid exerciseId, Guid routineId)
+        {
+            AddRelationship(new ExerciseRoutine
+            {
+                ExerciseId = exerciseId,
+                RoutineId = routineId
+            });
+            var exercise = _context.Set<Exercise>().Find(exerciseId);
+            return Json(new { Description = exercise.Description, Name = exercise.Name });
         }
 
         private bool RoutineExists(Guid id)

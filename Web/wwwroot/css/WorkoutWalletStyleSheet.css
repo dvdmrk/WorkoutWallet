@@ -1,0 +1,21 @@
+﻿.index-actions {
+    font-size: 1.2em;
+    width: 100px;
+}
+.index-author-row {
+    background-color:#eee; text-align:center; 
+    text-transform:capitalize;
+}
+table th, .index-actions {
+    text-align: center;
+    vertical-align: middle !important;
+}
+a:not(.nav-link) {
+    font-weight: bold;
+    color: steelblue;
+    text-decoration: none !important;
+}
+a:hover:not(.nav-link) {
+    color: dodgerblue !important;
+    text-decoration: none !important;
+}

@@ -20,7 +20,7 @@ namespace Web.Controllers
         private readonly ApplicationDbContext _context;
 
 
-        public ProfileController(ApplicationDbContext context)
+        public ProfileController(ApplicationDbContext context) : base(context)
         {
             _context = context;
         }

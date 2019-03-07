@@ -1,4 +1,5 @@
-﻿@model Web.ViewModels.RoutineViewModels.RoutineViewModel
+﻿@using Web.Types
+@model Web.ViewModels.ExerciseViewModels.ExerciseViewModel
 
 @{
     ViewData["Title"] = "Create";
@@ -6,12 +7,12 @@
 
 <h1>Create</h1>
 
-<h4>RoutineViewModel</h4>
 <hr />
 <div class="row">
     <div class="col-lg-6">
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            @Html.HiddenFor(c => c.RoutineId)
             <div class="form-group">
                 <label asp-for="Name" class="control-label"></label>
                 <input asp-for="Name" class="form-control" />
@@ -21,6 +22,11 @@
                 <label asp-for="Description" class="control-label"></label>
                 <textarea rows=5 asp-for="Description" class="form-control"></textarea>
                 <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ExerciseType" class="control-label"></label>
+                <select class="form-control" asp-for="ExerciseType" asp-items="Html.GetEnumSelectList<ExerciseType>()"></select>
+                <span asp-validation-for="ExerciseType" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="VideoUrl" class="control-label"></label>

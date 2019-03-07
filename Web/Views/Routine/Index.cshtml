@@ -4,7 +4,7 @@
     ViewData["Title"] = "Index";
 }
 
-<h1>Index</h1>
+<h1>Routines</h1>
 
 <p>
     <a asp-action="Create">Create New</a>
@@ -13,13 +13,7 @@
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.CreatedByName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CreatedDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
+                @Html.DisplayNameFor(model => model.HasVideo)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.NumberOfExercises)
@@ -30,51 +24,44 @@
             <th>
                 @Html.DisplayNameFor(model => model.NumberOfWorkouts)
             </th>
-            <th>
-                @Html.DisplayNameFor(model => model.HasVideo)
-            </th>
             <th>Actions</th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                <a asp-controller="Profile"
-                   asp-action="Details"
-                   asp-route-id="@item.CreatedById">@item.CreatedByName
-                </a>
-            </td>
-            <td>
-                @Convert.ToDateTime(item.CreatedDate).ToString("d")
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.NumberOfExercises)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.NumberOfUsers)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.NumberOfWorkouts)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.HasVideo)
-            </td>
-            <td>
-                @if (ViewBag.CurrentUserId == item.CreatedById)
-                {
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> <span>|</span>
-                }
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a>
-                @if (ViewBag.CurrentUserId == item.CreatedById)
-                {
-                    <span>|</span> <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-                }
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td class="index-author-row" colspan="6">
+                    Routine Name: <b>@item.Name</b> <span>-</span> Created By: <a asp-controller="Profile" asp-action="Details" asp-route-id="@item.CreatedById">@item.CreatedByName</a> <span>-</span> Created On: @item.CreatedDate.ToString("d")
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.HasVideo)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.NumberOfExercises)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.NumberOfUsers)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.NumberOfWorkouts)
+                </td>
+                <td class="index-actions">
+                    <span>
+                        @if (ViewBag.CurrentUserId == item.CreatedById)
+                        {
+                            <a asp-action="Edit" title="Edit" asp-route-id="@item.Id"><i class="fas fa-edit"></i></a>
+                        }
+                        <a asp-action="Details" title="Details" asp-route-id="@item.Id"><i class="fas fa-info-circle"></i></a>
+                        @if (ViewBag.CurrentUserId == item.CreatedById)
+                        {
+                            <a asp-action="Delete" title="Delete" asp-route-id="@item.Id"><i class="far fa-trash-alt"></i></a>
+                        }
+                    </span>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

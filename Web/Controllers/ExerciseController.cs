@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Web.Common;
 using Web.Data;
 using Web.Models;
 using Web.ViewModels.ExerciseViewModels;
@@ -13,11 +14,11 @@ using Web.ViewModels.ExerciseViewModels;
 namespace Web.Controllers
 {
     [Authorize]
-    public class ExerciseController : Controller
+    public class ExerciseController : BaseController
     {
         private readonly ApplicationDbContext _context;
 
-        public ExerciseController(ApplicationDbContext context)
+        public ExerciseController(ApplicationDbContext context) : base (context)
         {
             _context = context;
         }
@@ -26,6 +27,9 @@ namespace Web.Controllers
         {
             return View(_context.Set<Exercise>().Include(e => e.ExerciseRoutines).Include(e => e.ExerciseSets).Include(e => e.ExerciseMuscleGroups).Include(e => e.CreateBy).ThenInclude(e => e.Profile).Select(e => new ExerciseIndexViewModel
             {
+                Id = e.Id,
+                Name = e.Name,
+                Description = e.Description,
                 CreatedByName = e.CreateBy.Profile.UserName,
                 CreatedById = e.CreateBy.Id,
                 CreatedDate = e.CreateDate,
@@ -43,8 +47,17 @@ namespace Web.Controllers
                 return NotFound();
             }
 
-            var exercise = _context.Set<Exercise>()
-                .FirstOrDefault(m => m.Id == id);
+            var exercise = _context.Set<Exercise>().Include(e => e.CreateBy).ThenInclude(e => e.Profile).Where(c => c.Id == id).Select(e => new ExerciseViewModel
+            {
+                Id = e.Id,
+                CreatedByName = e.CreateBy.Profile.UserName,
+                CreatedDate = e.CreateDate,
+                ExerciseType = e.ExerciseType,
+                Name = e.Name,
+                Description = e.Description,
+                VideoUrl = e.VideoUrl
+            }).FirstOrDefault();
+
             if (exercise == null)
             {
                 return NotFound();
@@ -53,23 +66,44 @@ namespace Web.Controllers
             return View(exercise);
         }
 
-        public IActionResult Create()
+        public IActionResult Create(Guid id)
         {
-            return View();
+            return View(new ExerciseViewModel
+            {
+                RoutineId = id,
+            });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Exercise exercise)
+        public IActionResult Create(ExerciseViewModel vm)
         {
             if (ModelState.IsValid)
             {
-                exercise.Id = Guid.NewGuid();
-                _context.Add(exercise);
+                var exercise = new Exercise
+                {
+                    Name = vm.Name,
+                    Description = vm.Description,
+                    CreateBy = _context.Set<User>().Find(GetUserId()),
+                    CreateDate = DateTime.Now,
+                    ExerciseType = vm.ExerciseType,
+                    VideoUrl = vm.VideoUrl
+                };
+                _context.Set<Exercise>().Add(exercise);
+
+                if (vm.RoutineId != null && vm.RoutineId != Guid.Empty)
+                    _context.Set<ExerciseRoutine>().Add(new ExerciseRoutine
+                    {
+                        Routine = _context.Set<Routine>().Find(vm.RoutineId),
+                        Exercise = exercise
+                    });
+
                 _context.SaveChanges();
-                return RedirectToAction(nameof(Index));
+                if (vm.RoutineId != null && vm.RoutineId != Guid.Empty)
+                    return RedirectToAction("Edit", "Routine", new { id = vm.RoutineId });
+                return RedirectToAction("Index");
             }
-            return View(exercise);
+            return View(vm);
         }
 
         public IActionResult Edit(Guid? id)
@@ -79,7 +113,23 @@ namespace Web.Controllers
                 return NotFound();
             }
 
-            var exercise =  _context.Set<Exercise>().Find(id);
+            var exercise =  _context.Set<Exercise>().Include(c => c.ExerciseMuscleGroups).Where(c => c.Id == id).Select(e => new ExerciseViewModel
+            {
+                Id = e.Id,
+                Name = e.Name,
+                Description = e.Description,
+                ExerciseType = e.ExerciseType,
+                VideoUrl = e.VideoUrl,
+                MuscleGroups = e.ExerciseMuscleGroups.Select(c => new BaseNamedEntity
+                {
+                    Id = c.MuscleGroupId,
+                    Name = c.MuscleGroup.Name,
+                    Description = c.MuscleGroup.Description
+                }).ToList()
+            }).FirstOrDefault();
+
+            ViewBag.MuscleGroupListItems = GetDropdownViewModels<MuscleGroup>().Where(c => exercise.MuscleGroups.All(e => e.Id != Guid.Parse(c.Value)));
+
             if (exercise == null)
             {
                 return NotFound();
@@ -89,18 +139,22 @@ namespace Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(Exercise exercise)
+        public IActionResult Edit(ExerciseViewModel vm)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(exercise);
-                     _context.SaveChanges();
+                    var exercise = _context.Set<Exercise>().Find(vm.Id);
+                    exercise.Name = vm.Name;
+                    exercise.ExerciseType = vm.ExerciseType;
+                    exercise.Description = vm.Description;
+                    exercise.VideoUrl = vm.VideoUrl;
+                    _context.SaveChanges();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ExerciseExists(exercise.Id))
+                    if (!ExerciseExists(vm.Id))
                     {
                         return NotFound();
                     }
@@ -111,7 +165,7 @@ namespace Web.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(exercise);
+            return View(vm);
         }
 
         public IActionResult Delete(Guid? id)
@@ -121,8 +175,17 @@ namespace Web.Controllers
                 return NotFound();
             }
 
-            var exercise =  _context.Set<Exercise>()
-                .FirstOrDefault(m => m.Id == id);
+            var exercise = _context.Set<Exercise>().Include(e => e.CreateBy).ThenInclude(e => e.Profile).Where(c => c.Id == id).Select(e => new ExerciseViewModel
+            {
+                Id = e.Id,
+                CreatedByName = e.CreateBy.Profile.UserName,
+                CreatedDate = e.CreateDate,
+                Name = e.Name,
+                Description = e.Description,
+                ExerciseType = e.ExerciseType,
+                VideoUrl = e.VideoUrl
+            }).FirstOrDefault();
+
             if (exercise == null)
             {
                 return NotFound();
@@ -139,6 +202,17 @@ namespace Web.Controllers
             _context.Set<Exercise>().Remove(exercise);
             _context.SaveChanges();
             return RedirectToAction(nameof(Index));
+        }
+
+        public JsonResult AddMuscleGroupToExercise(Guid muscleGroupId, Guid exerciseId)
+        {
+            AddRelationship(new ExerciseMuscleGroup
+            {
+                MuscleGroupId = muscleGroupId,
+                ExerciseId = exerciseId
+            });
+            var muscleGroup = _context.Set<MuscleGroup>().Find(muscleGroupId);
+            return Json(new { Description = muscleGroup.Description, Name = muscleGroup.Name });
         }
 
         private bool ExerciseExists(Guid id)

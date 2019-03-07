@@ -7,6 +7,7 @@ using Web.Models;
 using Web.ViewModels;
 using Web.ViewModels.RoutineViewModels;
 using Web.ViewModels.ExerciseViewModels;
+using Web.Common;
 
 namespace Web.Data
 {
@@ -52,8 +53,5 @@ namespace Web.Data
         public DbSet<Profile> Profiles { get; set; }
         public DbSet<Routine> Routines { get; set; }
         public DbSet<Workout> Workouts { get; set; }
-        public DbSet<Web.ViewModels.RoutineViewModels.RoutineIndexViewModel> RoutineIndexViewModel { get; set; }
-        public DbSet<Web.ViewModels.RoutineViewModels.RoutineViewModel> RoutineViewModel { get; set; }
-        public DbSet<Web.ViewModels.ExerciseViewModels.ExerciseIndexViewModel> ExerciseIndexViewModel { get; set; }
     }
 }
