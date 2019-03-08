@@ -80,6 +80,7 @@ namespace Web.Controllers
         {
             if (ModelState.IsValid)
             {
+                ExerciseRoutine exerciseRoutine = new ExerciseRoutine(); 
                 var exercise = new Exercise
                 {
                     Name = vm.Name,
@@ -91,13 +92,22 @@ namespace Web.Controllers
                 };
                 _context.Set<Exercise>().Add(exercise);
 
-                if (vm.RoutineId != null && vm.RoutineId != Guid.Empty)
-                    _context.Set<ExerciseRoutine>().Add(new ExerciseRoutine
+                if (vm.RoutineId != null && vm.RoutineId != Guid.Empty) { 
+                    exerciseRoutine = new ExerciseRoutine
                     {
                         Routine = _context.Set<Routine>().Find(vm.RoutineId),
                         Exercise = exercise
-                    });
+                    };
+                    _context.Set<ExerciseRoutine>().Add(exerciseRoutine);
+                }
 
+                var erd = new ExerciseRoutineDetail
+                {
+                    ExerciseRoutine = exerciseRoutine,
+                    OrderInRoutine = _context.Set<ExerciseRoutine>().Where(c => c.RoutineId == vm.RoutineId).Sum(c => c.ExerciseRoutineDetails.Count())
+                };
+
+                _context.Set<ExerciseRoutineDetail>().Add(erd);
                 _context.SaveChanges();
                 if (vm.RoutineId != null && vm.RoutineId != Guid.Empty)
                     return RedirectToAction("Edit", "Routine", new { id = vm.RoutineId });
@@ -154,7 +164,7 @@ namespace Web.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ExerciseExists(vm.Id))
+                    if (!EntityExists<BaseEntity>(vm.Id))
                     {
                         return NotFound();
                     }
@@ -213,11 +223,6 @@ namespace Web.Controllers
             });
             var muscleGroup = _context.Set<MuscleGroup>().Find(muscleGroupId);
             return Json(new { Description = muscleGroup.Description, Name = muscleGroup.Name });
-        }
-
-        private bool ExerciseExists(Guid id)
-        {
-            return _context.Set<Exercise>().Any(e => e.Id == id);
         }
     }
 }

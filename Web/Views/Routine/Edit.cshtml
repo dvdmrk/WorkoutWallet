@@ -3,7 +3,6 @@
 @{
     ViewData["Title"] = "Edit";
 }
-
 <h1>Edit</h1>
 
 <hr />
@@ -13,19 +12,19 @@
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="VideoUrl" class="control-label"></label>
-                <input asp-for="VideoUrl" class="form-control" />
-                <span asp-validation-for="VideoUrl" class="text-danger"></span>
-            </div>
-            <div class="form-group">
                 <label asp-for="Name" class="control-label"></label>
                 <input asp-for="Name" class="form-control" />
                 <span asp-validation-for="Name" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="Description" class="control-label"></label>
-                <textarea rows=5 asp-for="Description" class="form-control" ></textarea>
+                <textarea rows=5 asp-for="Description" class="form-control"></textarea>
                 <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="VideoUrl" class="control-label"></label>
+                <input asp-for="VideoUrl" class="form-control" />
+                <span asp-validation-for="VideoUrl" class="text-danger"></span>
             </div>
             <input type="hidden" asp-for="Id" />
             <div class="form-group">
@@ -47,8 +46,10 @@
                 <select name="ExerciseId" asp-items="@ViewBag.ExerciseListItems" class="form-control"></select>
             </div>
         </div>
-        <div class="row">
-            @await Html.PartialAsync("_index", Model.Exercises)
+        <div class="row" id="IndexPartial">
+            @if (Model.Exercises != null) {
+                @Html.Partial("~/Views/Shared/Partials/_ExerciseRoutineIndexPartial.cshtml", Model.Exercises);
+            }
         </div>
     </div>
 </div>
@@ -62,6 +63,8 @@
 }
 <script>
     $("#AddExerciseFromList").click(function () {
-        AddManyToManyRelationShip("@ViewContext.RouteData.Values["controller"]", "AddExerciseToRoutine", "?exerciseId=" + $("[name=ExerciseId]").val() + "&routineId=@Model.Id");
+        $.post("/@ViewContext.RouteData.Values["controller"]/AddExerciseToRoutine?exerciseId=" + $("[name=ExerciseId]").val() + "&routineId=@Model.Id", function (data) {
+            $("#IndexPartial").html(data);
+        });
     });
 </script>

@@ -21,11 +21,15 @@ namespace Web.Data
             builder.Entity<User>(b => { b.Property(u => u.Id).ValueGeneratedOnAdd(); });
             builder.Entity<Role>(b => { b.Property(u => u.Id).ValueGeneratedOnAdd(); });
             builder.Entity<Exercise>(b => { b.Property(u => u.Id).ValueGeneratedOnAdd(); });
+            builder.Entity<ExerciseRoutine>(b => { b.Property(u => u.Id).ValueGeneratedOnAdd(); });
             builder.Entity<ExerciseSet>(b => { b.Property(u => u.Id).ValueGeneratedOnAdd(); });
             builder.Entity<MuscleGroup>(b => { b.Property(u => u.Id).ValueGeneratedOnAdd(); });
+            builder.Entity<ExerciseMuscleGroup>(b => { b.Property(u => u.Id).ValueGeneratedOnAdd(); });
             builder.Entity<Profile>(b => { b.Property(u => u.Id).ValueGeneratedOnAdd(); });
             builder.Entity<Routine>(b => { b.Property(u => u.Id).ValueGeneratedOnAdd(); });
             builder.Entity<Workout>(b => { b.Property(u => u.Id).ValueGeneratedOnAdd(); });
+            builder.Entity<ExerciseRoutineDetail>(b => { b.Property(u => u.Id).ValueGeneratedOnAdd(); });
+
             //Many to Many
             builder.Entity<ExerciseMuscleGroup>().HasKey(emg => new { emg.ExerciseId, emg.MuscleGroupId });
             builder.Entity<ExerciseMuscleGroup>().HasOne(emg => emg.Exercise).WithMany(e => e.ExerciseMuscleGroups).HasForeignKey(emg => emg.ExerciseId);
@@ -40,6 +44,7 @@ namespace Web.Data
             builder.Entity<ExerciseRoutine>().HasOne(er => er.Exercise).WithMany(e => e.ExerciseRoutines).HasForeignKey(er => er.ExerciseId);
             builder.Entity<ExerciseRoutine>().HasOne(er => er.Routine).WithMany(r => r.ExerciseRoutines).HasForeignKey(er => er.RoutineId);
             //One to Many
+            builder.Entity<ExerciseRoutine>().HasMany(c => c.ExerciseRoutineDetails).WithOne(e => e.ExerciseRoutine);
             builder.Entity<Exercise>().HasMany(c => c.ExerciseSets).WithOne(e => e.Exercise);
             builder.Entity<Profile>().HasMany(c => c.Workouts).WithOne(e => e.Profile);
             builder.Entity<Workout>().HasMany(c => c.ExerciseSets).WithOne(e => e.Workout);

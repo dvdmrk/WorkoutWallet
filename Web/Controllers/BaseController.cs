@@ -31,5 +31,9 @@ namespace Web.Controllers
             _context.Set<T>().Add(obj);
             _context.SaveChanges();
         }
+        public bool EntityExists<T>(Guid id) where T : BaseEntity
+        {
+            return _context.Set<T>().Any(e => e.Id == id);
+        }
     }
 }

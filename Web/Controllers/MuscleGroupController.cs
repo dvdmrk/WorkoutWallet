@@ -128,7 +128,7 @@ namespace Web.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!MuscleGroupExists(vm.Id))
+                    if (!EntityExists<MuscleGroup>(vm.Id))
                     {
                         return NotFound();
                     }
@@ -171,11 +171,6 @@ namespace Web.Controllers
             _context.Set<MuscleGroup>().Remove(muscleGroup);
             _context.SaveChanges();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool MuscleGroupExists(Guid id)
-        {
-            return _context.MuscleGroups.Any(e => e.Id == id);
         }
     }
 }

@@ -15,6 +15,6 @@ namespace Web.ViewModels.RoutineViewModels
         [Display(Name = "Created On")]
         public DateTime CreatedDate { get; set; }
         public string VideoUrl { get; set; }
-        public List<BaseNamedEntity> Exercises { get; set; }
+        public List<ExerciseIndexPartialViewModel> Exercises { get; set; }
     }
 }

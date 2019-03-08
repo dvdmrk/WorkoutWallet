@@ -36,38 +36,10 @@ namespace Web.Controllers
                 Name = e.Name,
                 Description = e.Description,
                 HasVideo = !String.IsNullOrEmpty(e.VideoUrl),
-                NumberOfExercises = e.ExerciseRoutines == null ? 0 : e.ExerciseRoutines.Count,
+                NumberOfExercises = e.ExerciseRoutines.Sum(c => c.ExerciseRoutineDetails.Count),
                 NumberOfUsers = e.RoutineProfiles == null ? 0 : e.RoutineProfiles.Count,
                 NumberOfWorkouts = e.Workouts == null ? 0 : e.Workouts.Count,
             }).ToList());
-        }
-
-        public IActionResult Details(Guid? id)
-        {
-            ViewBag.CurrentUserId = GetUserId();
-
-            if (id == null)
-            {
-                return NotFound();
-            }
-            var test = _context.Set<Routine>().Find(id);
-            var routine = _context.Set<Routine>().Include(e => e.CreateBy).ThenInclude(e => e.Profile).Where(e => e.Id == id).Select(e => new RoutineViewModel
-            {
-                Id = e.Id,
-                CreatedByName = e.CreateBy.Profile.UserName,
-                CreatedById = e.CreateBy.Id,
-                CreatedDate = e.CreateDate,
-                Name = e.Name,
-                Description = e.Description,
-                VideoUrl = e.VideoUrl
-            }).FirstOrDefault();
-
-            if (routine == null)
-            {
-                return NotFound();
-            }
-
-            return View(routine);
         }
 
         public IActionResult Create()
@@ -96,6 +68,33 @@ namespace Web.Controllers
             return View(vm);
         }
 
+        public IActionResult Details(Guid? id)
+        {
+            ViewBag.CurrentUserId = GetUserId();
+
+            if (id == null)
+            {
+                return NotFound();
+            }
+            var routine = _context.Set<Routine>().Include(e => e.CreateBy).ThenInclude(e => e.Profile).Where(e => e.Id == id).Select(e => new RoutineViewModel
+            {
+                Id = e.Id,
+                CreatedByName = e.CreateBy.Profile.UserName,
+                CreatedById = e.CreateBy.Id,
+                CreatedDate = e.CreateDate,
+                Name = e.Name,
+                Description = e.Description,
+                VideoUrl = e.VideoUrl
+            }).FirstOrDefault();
+
+            if (routine == null)
+            {
+                return NotFound();
+            }
+
+            return View(routine);
+        }
+
         public IActionResult Edit(Guid? id)
         {
             if (id == null)
@@ -105,23 +104,29 @@ namespace Web.Controllers
 
             ViewBag.ExerciseListItems = GetDropdownViewModels<Exercise>();
 
-            var routine = _context.Set<Routine>().Where(e => e.Id == id).Select(e => new RoutineViewModel
+            var routine = _context.Set<Routine>().Include(c => c.ExerciseRoutines).Where(e => e.Id == id);
+            var vm = routine.Select(e => new RoutineViewModel
             {
                 Id = e.Id,
                 Name = e.Name,
                 Description = e.Description,
-                VideoUrl = e.VideoUrl,
-                Exercises = e.ExerciseRoutines.Select(c => new BaseNamedEntity {
-                    Id = c.ExerciseId,
-                    Name = c.Exercise.Name,
-                    Description = c.Exercise.Description
-                }).ToList()
+                Exercises = _context.Set<ExerciseRoutineDetail>().Include(c => c.ExerciseRoutine).ThenInclude(c => c.Exercise).ThenInclude(c => c.CreateBy).Include(c => c.ExerciseRoutine).ThenInclude(c => c.Routine).Where(c => c.ExerciseRoutine.RoutineId == id).Select(c => new ExerciseIndexPartialViewModel
+                {
+                    Id = c.Id,
+                    Name = c.ExerciseRoutine.Exercise.Name,
+                    Description = c.ExerciseRoutine.Exercise.Description,
+                    RecommendedNumberOfReps = c.RecommendedNumberOfReps,
+                    RecommendedPercentOfMax = c.RecommendedPercentOfMax,
+                    TillFailure = c.TillFailure,
+                    OrderInRoutine = c.OrderInRoutine
+                }).OrderBy(c => c.OrderInRoutine).ToList()
             }).FirstOrDefault();
-            if (routine == null)
+
+            if (vm == null)
             {
                 return NotFound();
             }
-            return View(routine);
+            return View(vm);
         }
 
         [HttpPost]
@@ -140,7 +145,7 @@ namespace Web.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!RoutineExists(vm.Id)) return NotFound();
+                    if (!EntityExists<Routine>(vm.Id)) return NotFound();
                     else throw;
                 }
                 return RedirectToAction(nameof(Index));
@@ -180,20 +185,119 @@ namespace Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        public JsonResult AddExerciseToRoutine(Guid exerciseId, Guid routineId)
+        public IActionResult DeleteExerciseRoutineDetail(Guid id)
         {
-            AddRelationship(new ExerciseRoutine
-            {
-                ExerciseId = exerciseId,
-                RoutineId = routineId
-            });
-            var exercise = _context.Set<Exercise>().Find(exerciseId);
-            return Json(new { Description = exercise.Description, Name = exercise.Name });
+            var exerciseRoutineDetail = _context.Set<ExerciseRoutineDetail>().Include(c => c.ExerciseRoutine).ThenInclude(c => c.ExerciseRoutineDetails).FirstOrDefault(c => c.Id == id);
+            var routineId = exerciseRoutineDetail.ExerciseRoutine.RoutineId;
+            var exerciseRoutineDetails = _context.Set<Routine>().Include(e => e.ExerciseRoutines).ThenInclude(c => c.ExerciseRoutineDetails).FirstOrDefault(c => c.Id == routineId).ExerciseRoutines.SelectMany(c => c.ExerciseRoutineDetails).Where(c => c.Id != id).ToList();
+            _context.Set<ExerciseRoutineDetail>().Remove(exerciseRoutineDetail);
+
+            var i = 0;
+            foreach (var set in exerciseRoutineDetails.OrderBy(c => c.OrderInRoutine)) {
+                set.OrderInRoutine = i;
+                i++;
+            }
+            _context.SaveChanges();
+
+            return ExerciseRoutineIndexPartial(routineId);
         }
 
-        private bool RoutineExists(Guid id)
+        public IActionResult OrderExercises(List<string> ids)
         {
-            return _context.Routines.Any(e => e.Id == id);
+            Guid routineId = Guid.Empty;
+            var i = 0;
+            foreach (var id in ids)
+            {
+                var erd = _context.Set<ExerciseRoutineDetail>().Include(c => c.ExerciseRoutine).FirstOrDefault(c => c.Id == Guid.Parse(id));
+                if (i == 0) routineId = erd.ExerciseRoutine.RoutineId;
+                erd.OrderInRoutine = i;
+                i++;
+            }
+            _context.SaveChanges();
+
+            return ExerciseRoutineIndexPartial(routineId);
+        }
+
+        public IActionResult CopyExerciseRoutineDetail(Guid id)
+        {
+            var erd = _context.Set<ExerciseRoutineDetail>().Include(c => c.ExerciseRoutine).FirstOrDefault(c => c.Id == id);
+            var routineId = erd.ExerciseRoutine.RoutineId;
+
+            var detail = new ExerciseRoutineDetail
+            {
+                ExerciseRoutine = erd.ExerciseRoutine,
+                RecommendedNumberOfReps = erd.RecommendedNumberOfReps,
+                RecommendedPercentOfMax = erd.RecommendedPercentOfMax,
+                TillFailure = erd.TillFailure,
+                OrderInRoutine = _context.Set<ExerciseRoutine>().Where(c => c.RoutineId == routineId).Sum(c => c.ExerciseRoutineDetails.Count()),
+            };
+
+            _context.Set<ExerciseRoutineDetail>().Add(detail);
+            _context.SaveChanges();
+            return ExerciseRoutineIndexPartial(routineId);
+        }
+
+        public IActionResult ExerciseRoutineIndexPartial(Guid id)
+        {
+            return PartialView("~/Views/Shared/Partials/_ExerciseRoutineIndexPartial.cshtml", _context.Set<ExerciseRoutineDetail>().Include(c => c.ExerciseRoutine).ThenInclude(c => c.Exercise).ThenInclude(c => c.CreateBy).Include(c => c.ExerciseRoutine).ThenInclude(c => c.Routine).Where(c => c.ExerciseRoutine.RoutineId == id).Select(c => new ExerciseIndexPartialViewModel
+            {
+                Id = c.Id,
+                Name = c.ExerciseRoutine.Exercise.Name,
+                Description = c.ExerciseRoutine.Exercise.Description,
+                RecommendedNumberOfReps = c.RecommendedNumberOfReps,
+                RecommendedPercentOfMax = c.RecommendedPercentOfMax,
+                TillFailure = c.TillFailure,
+                OrderInRoutine = c.OrderInRoutine
+            }).OrderBy(c => c.OrderInRoutine).ToList());
+        }
+
+        public IActionResult ExerciseRoutineUpdatePartial(Guid id)
+        {
+            return PartialView("~/Views/Shared/Partials/_ExerciseRoutineUpdatePartial.cshtml", _context.Set<ExerciseRoutineDetail>().Where(e => e.Id == id).Select(e => new ExerciseIndexPartialViewModel
+            {
+                Id = e.Id,
+                Name = e.ExerciseRoutine.Exercise.Name,
+                Description = e.ExerciseRoutine.Exercise.Description,
+                RecommendedNumberOfReps = e.RecommendedNumberOfReps,
+                RecommendedPercentOfMax = e.RecommendedPercentOfMax,
+                OrderInRoutine = e.OrderInRoutine,
+                TillFailure = e.TillFailure
+            }).FirstOrDefault());
+        }
+
+        [HttpPost]
+        public void ExerciseRoutineUpdatePartial(ExerciseIndexPartialViewModel vm)
+        {
+            var exerciseRoutine = _context.Set<ExerciseRoutineDetail>().Include(c => c.ExerciseRoutine).FirstOrDefault(c => c.Id == vm.Id);
+            exerciseRoutine.RecommendedNumberOfReps = vm.RecommendedNumberOfReps;
+            exerciseRoutine.RecommendedPercentOfMax = vm.RecommendedPercentOfMax;
+            exerciseRoutine.OrderInRoutine = vm.OrderInRoutine;
+            exerciseRoutine.TillFailure = vm.TillFailure;
+            _context.SaveChanges();
+        }
+
+        public IActionResult AddExerciseToRoutine(Guid exerciseId, Guid routineId)
+        {
+            var er = _context.Set<ExerciseRoutine>().Include(c => c.Exercise).Include(c => c.Routine).FirstOrDefault(c => c.ExerciseId == exerciseId && c.RoutineId == routineId) ?? new ExerciseRoutine
+            {
+                Exercise = _context.Set<Exercise>().Find(exerciseId),
+                Routine = _context.Set<Routine>().Find(routineId)
+            };
+
+            if (er.Id == null || er.Id == Guid.Empty)
+            {
+                _context.Set<ExerciseRoutine>().Add(er);
+                _context.SaveChanges();
+            }
+
+            var erd = new ExerciseRoutineDetail {
+                ExerciseRoutine = er,
+                OrderInRoutine = _context.Set<ExerciseRoutine>().Where(c => c.RoutineId == routineId).Sum(c => c.ExerciseRoutineDetails.Count())
+            };
+            _context.Set<ExerciseRoutineDetail>().Add(erd);
+            _context.SaveChanges();
+
+            return ExerciseRoutineIndexPartial(er.Routine.Id);
         }
     }
 }

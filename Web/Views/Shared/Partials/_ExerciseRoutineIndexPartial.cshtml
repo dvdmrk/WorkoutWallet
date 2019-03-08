@@ -1,0 +1,102 @@
+﻿@model IEnumerable<Web.ViewModels.RoutineViewModels.ExerciseIndexPartialViewModel>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Description)
+            </th>
+            <th>
+                Order
+            </th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="sortable">
+        <span id="container">
+            @foreach (var item in Model)
+            {
+            <tr>
+                @Html.Hidden(item.Id.ToString(), null, new { @class = "itemId" })
+
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Description)
+                </td>
+                <td>
+                    @item.OrderInRoutine
+                </td>
+                <td class="index-actions">
+                    <span>
+                        <a href onclick="copyExerciseRoutineDetail('@item.Id');"><i class="far fa-copy"></i></a>
+                        <a href onclick="populateWindow('@item.Id', '@item.Name');" data-toggle="modal" data-target="#window"><i class="fas fa-edit"></i></a>
+                        <a href onclick="deleteExerciseRoutineDetail('@item.Id');"><i class="far fa-trash-alt"></i></a>
+                    </span>
+                </td>
+            </tr>
+            }
+        </span>
+    </tbody>
+</table>
+<script>
+    $(function () {
+        var fixHelper = function (e, ui) {
+            ui.children().each(function () {
+                console.log(e);
+                $(this).width($(this).width());
+            });
+            return ui;
+        };
+
+        $("#sortable").sortable({
+            axis: "y",
+            helper: fixHelper,
+            containment: "#container",
+            update: orderExercises,
+            sort: function (e) {
+                $(".ui-state-highlight").height($(".ui-sortable-helper").height());
+            },
+            placeholder: "ui-state-highlight"
+        });
+        $("#sortable").disableSelection();
+    });
+
+
+    function orderExercises() {
+        var ids = [];
+
+        $('.itemId').each(function () {
+            ids.push(this.name);
+        });
+
+        var data = { ids: ids };
+
+        $.post("/@ViewContext.RouteData.Values["controller"]/OrderExercises", data).done(function (data) {
+            $("#IndexPartial").html(data);
+        });
+    }
+
+    function deleteExerciseRoutineDetail(id) {
+        $.get("/Routine/DeleteExerciseRoutineDetail/" + id, function (data) {
+            $("#IndexPartial").html(data);
+        });
+        this.event.preventDefault()
+    }
+    function copyExerciseRoutineDetail(id) {
+        $.get("/Routine/CopyExerciseRoutineDetail/" + id, function (data) {
+            $("#IndexPartial").html(data);
+        });
+        this.event.preventDefault()
+    }
+    function populateWindow(id, name) {
+        $("#window .modal-title").text(name);
+        $.get("/Routine/ExerciseRoutineUpdatePartial/" + id, function (data) {
+            $("#window .modal-body").html(data);
+        });
+    }
+</script>
